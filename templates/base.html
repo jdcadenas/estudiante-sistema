@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Sistema de Asistencia Escolar{% endblock %}</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="{% url 'home' %}">Asistencia Escolar</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    {% if user.is_authenticated %}
+                        <li class="nav-item">
+                            <span class="navbar-text">
+                                Bienvenido, {{ user.username }}
+                            </span>
+                        </li>
+                        
+                        {% if user.is_staff %}
+                        <!-- Menú para Administradores -->
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="adminMenu" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                Módulo Admin
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-dark" aria-labelledby="adminMenu">
+                                <li><a class="dropdown-item" href="{% url 'dashboard_admin' %}">Dashboard</a></li>
+                                <li><a class="dropdown-item" href="{% url 'lista_estudiantes' %}">Gestionar Estudiantes</a></li>
+                                <li><a class="dropdown-item" href="{% url 'tomar_asistencia' %}">Tomar Asistencia</a></li>
+                                <li><a class="dropdown-item" href="{% url 'reporte_inasistencias' %}">Reporte de Inasistencias</a></li>
+                                <li><a class="dropdown-item" href="{% url 'gestionar_permisos' %}">Gestionar Permisos</a></li>
+                                <li><a class="dropdown-item" href="{% url 'lista_feedback' %}">Ver Feedback</a></li>
+                            </ul>
+                        </li>
+                        {% else %}
+                        <!-- Menú para Estudiantes -->
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="studentMenu" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                Módulo Estudiante
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-dark" aria-labelledby="studentMenu">
+                                <li><a class="dropdown-item" href="{% url 'solicitar_permiso' %}">Solicitar Permiso</a></li>
+                                <li><a class="dropdown-item" href="{% url 'historial_permisos' %}">Mis Permisos</a></li>
+                                <li><a class="dropdown-item" href="{% url 'enviar_feedback' %}">Enviar Feedback</a></li>
+                            </ul>
+                        </li>
+                        {% endif %}
+
+                        <li class="nav-item">
+                            <form action="{% url 'logout' %}" method="post" id="logout-form" style="display: none;">
+                                {% csrf_token %}
+                            </form>
+                            <a class="nav-link" href="#" onclick="document.getElementById('logout-form').submit(); return false;">Cerrar Sesión</a>
+                        </li>
+                    {% else %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'login' %}">Iniciar Sesión</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'registro' %}">Registrarse</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container mt-4">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        {% block content %}
+        {% endblock %}
+    </main>
+
+    <footer class="bg-light text-center text-lg-start mt-5">
+        <div class="text-center p-3" style="background-color: rgba(0, 0, 0, 0.05);">
+            © 2026 Sistema de Asistencia Escolar
+        </div>
+    </footer>
+
+    <!-- Bootstrap 5 Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+    
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

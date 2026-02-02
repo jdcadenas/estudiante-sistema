@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block title %}Enviar Feedback{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title text-center">Enviar Comentario o Sugerencia</h2>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">
+                    Utiliza este formulario para enviar tus comentarios, sugerencias o reportar algún problema al personal administrativo.
+                </p>
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    {% if form.errors %}
+                        <div class="alert alert-danger">
+                            Por favor, corrige los errores en el formulario.
+                        </div>
+                    {% endif %}
+                    
+                    <div class="mb-3">
+                        {{ form.mensaje }}
+                    </div>
+                    
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">Enviar Feedback</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

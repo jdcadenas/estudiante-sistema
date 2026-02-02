@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard del Administrador{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="mb-0">Dashboard del Administrador</h1>
+    {% if cursos_disponibles %}
+    <div class="col-md-3">
+        <label for="courseFilter" class="form-label visually-hidden">Filtrar por Curso</label>
+        <select class="form-select" id="courseFilter" onchange="window.location.href = '?curso=' + this.value;">
+            <option value="">Todos los Cursos</option>
+            {% for curso in cursos_disponibles %}
+                <option value="{{ curso.pk }}" {% if curso_seleccionado and curso_seleccionado.pk == curso.pk %}selected{% endif %}>
+                    {{ curso.nombre }} ({{ curso.codigo }})
+                </option>
+            {% endfor %}
+        </select>
+    </div>
+    {% endif %}
+</div>
+
+<div class="row">
+    <!-- Tarjeta Total Estudiantes -->
+    <div class="col-md-6 col-lg-4 mb-4">
+        <div class="card text-white bg-primary h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="card-title">Total de Estudiantes</h5>
+                        <h2 class="fw-bold">{{ total_estudiantes }}</h2>
+                    </div>
+                    <i class="bi bi-people-fill" style="font-size: 3rem;"></i>
+                </div>
+            </div>
+            <a href="{% url 'lista_estudiantes' %}" class="card-footer text-white text-decoration-none">
+                Ver detalles <i class="bi bi-arrow-right-circle-fill"></i>
+            </a>
+        </div>
+    </div>
+
+    <!-- Tarjeta Permisos Pendientes -->
+    <div class="col-md-6 col-lg-4 mb-4">
+        <div class="card text-dark bg-warning h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="card-title">Permisos Pendientes</h5>
+                        <h2 class="fw-bold">{{ permisos_pendientes }}</h2>
+                    </div>
+                    <i class="bi bi-envelope-exclamation-fill" style="font-size: 3rem;"></i>
+                </div>
+            </div>
+            <a href="{% url 'gestionar_permisos' %}" class="card-footer text-dark text-decoration-none">
+                Gestionar permisos <i class="bi bi-arrow-right-circle-fill"></i>
+            </a>
+        </div>
+    </div>
+
+</div>
+
+<hr class="my-4">
+
+<div class="row">
+    <div class="col-lg-7">
+        <h2 class="mb-3">Últimas Solicitudes de Permiso Pendientes</h2>
+        <div class="card">
+            <div class="card-body">
+                {% if ultimos_permisos_pendientes %}
+                    <ul class="list-group list-group-flush">
+                        {% for permiso in ultimos_permisos_pendientes %}
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>{{ permiso.estudiante }}</strong>
+                                    <small class="d-block text-muted">{{ permiso.motivo|truncatechars:50 }}</small>
+                                </div>
+                                <span class="badge bg-secondary rounded-pill">{{ permiso.fecha_creacion|timesince }} ago</span>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <div class="alert alert-success mb-0">No hay solicitudes de permiso pendientes.</div>
+                {% endif %}
+            </div>
+             <div class="card-footer text-end">
+                <a href="{% url 'gestionar_permisos' %}">Ver todas las solicitudes</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-5">
+        <h2 class="mb-3">Últimos Estudiantes Registrados</h2>
+         <div class="card">
+            <div class="card-body">
+                {% if ultimos_estudiantes %}
+                    <ul class="list-group list-group-flush">
+                        {% for estudiante in ultimos_estudiantes %}
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                {{ estudiante.nombres }} {{ estudiante.apellidos }}
+                                <span class="badge bg-info text-dark rounded-pill">{{ estudiante.usuario.date_joined|date:"d M Y" }}</span>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <div class="alert alert-secondary mb-0">No hay estudiantes registrados recientemente.</div>
+                {% endif %}
+            </div>
+            <div class="card-footer text-end">
+                <a href="{% url 'lista_estudiantes' %}">Ver todos los estudiantes</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

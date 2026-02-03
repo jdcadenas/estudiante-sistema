@@ -1,0 +1,6 @@
+Django==5.2.10
+gunicorn
+dj-database-url
+psycopg2-binary
+whitenoise[brotli]
+xhtml2pdf

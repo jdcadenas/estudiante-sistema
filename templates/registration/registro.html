@@ -54,9 +54,15 @@
                         <legend class="w-auto h5">Datos del Perfil del Estudiante</legend>
                         <!-- Renderiza campos del formulario de perfil aquí -->
                         <!-- Ejemplo: {{ perfil_form.nombres.label_tag }} {{ perfil_form.nombres }} -->
-                        <div class="mb-3">
-                            <label for="{{ perfil_form.cedula.id_for_label }}" class="form-label">Cédula:</label>
-                            {{ perfil_form.cedula }}
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ perfil_form.cedula.id_for_label }}" class="form-label">Cédula:</label>
+                                {{ perfil_form.cedula }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ perfil_form.telefono.id_for_label }}" class="form-label">Teléfono:</label>
+                                {{ perfil_form.telefono }}
+                            </div>
                         </div>
                         <div class="row">
                             <div class="col-md-6 mb-3">

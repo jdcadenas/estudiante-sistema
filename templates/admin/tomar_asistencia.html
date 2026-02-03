@@ -34,6 +34,21 @@
     <div class="card-body">
         <form id="form-asistencia" action="{% url 'guardar_asistencia' %}{% if curso_seleccionado %}?curso={{ curso_seleccionado.pk }}{% endif %}" method="post">
             {% csrf_token %}
+            <div class="row mb-3 align-items-end">
+                <div class="col-md-4">
+                    <label for="horas_academicas" class="form-label fw-bold">Horas Académicas del Día:</label>
+                    <select class="form-select" id="horas_academicas" name="horas_academicas">
+                        <option value="1" {% if horas_academicas_guardadas == 1 %}selected{% endif %}>1 Hora</option>
+                        <option value="2" {% if horas_academicas_guardadas == 2 %}selected{% endif %}>2 Horas</option>
+                        <option value="3" {% if horas_academicas_guardadas == 3 %}selected{% endif %}>3 Horas</option>
+                        <option value="4" {% if horas_academicas_guardadas == 4 %}selected{% endif %}>4 Horas</option>
+                        <option value="5" {% if horas_academicas_guardadas == 5 %}selected{% endif %}>5 Horas</option>
+                        <option value="6" {% if horas_academicas_guardadas == 6 %}selected{% endif %}>6 Horas</option>
+                        <option value="7" {% if horas_academicas_guardadas == 7 %}selected{% endif %}>7 Horas</option>
+                        <option value="8" {% if horas_academicas_guardadas == 8 %}selected{% endif %}>8 Horas</option>
+                    </select>
+                </div>
+            </div>
             <div class="table-responsive">
                 <table class="table table-striped table-hover">
                     <thead class="table-dark">

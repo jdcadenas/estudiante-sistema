@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Reporte de Asistencia - {{ curso_nombre }}</title>
+    <style>
+        @page {
+            size: A4 portrait;
+            margin: 2cm;
+        }
+        body {
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            font-size: 9pt; /* Reduced font size */
+            line-height: 1.4;
+            color: #333;
+        }
+        .header {
+            display: flex; /* Use flexbox for layout */
+            align-items: center; /* Vertically align items */
+            margin-bottom: 20px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+        .header img {
+            width: 150px; /* Use fixed width for better PDF rendering, and smaller */
+            height: auto;
+            margin-right: 100px; /* Space between logo and text */
+            /* margin-bottom removed as flex handles alignment */
+        }
+        .header-text-content {
+            flex: 1; /* Take remaining space */
+        }
+        .header h1 {
+            font-size: 14pt; /* Reduced font size */
+            margin: 0;
+            color: #2c3e50;
+        }
+        .header p {
+            font-size: 10pt; /* Reduced font size */
+            margin: 2px 0;
+            color: #555;
+        }
+        .section-title {
+            font-size: 12pt; /* Reduced font size */
+            font-weight: bold;
+            margin-top: 20px;
+            margin-bottom: 15px;
+            color: #34495e;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 5px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 8pt; /* Smaller font for table */
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 6px;
+            text-align: left;
+            vertical-align: top;
+        }
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+            color: #333;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .attendance-list {
+            list-style: none;
+            padding-left: 0;
+            margin: 0;
+        }
+        .attendance-list li {
+            padding: 2px 0;
+            font-size: 7.5pt; /* Even smaller for the list */
+            white-space: nowrap; /* Prevent wrapping */
+        }
+        .footer {
+            position: running(footer);
+            bottom: -2cm;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-size: 8pt;
+            color: #777;
+            border-top: 1px solid #eee;
+            padding-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        {% if logo_path %}
+        <img src="{{ logo_path }}" alt="Logo IUJO">
+        {% endif %}
+        <div class="header-text-content">
+            <h1>Reporte Final de Asistencia</h1>
+            <p><strong>Curso:</strong> {{ curso_nombre }}</p>
+            <p><strong>Facilitador:</strong> {{ facilitador_nombre }}</p>
+            <p><strong>Fecha de Emisión:</strong> {{ fecha_emision }}</p>
+        </div>
+    </div>
+
+    <div class="section-title">Estudiantes y Asistencias</div>
+
+    {% if estudiantes %}
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 20%;">Nombre</th>
+                    <th style="width: 15%;">Cédula</th>
+                    <th style="width: 15%;">Teléfono</th>
+                    <th style="width: 35%;">Días y Horas de Asistencia</th>
+                    <th style="width: 15%;">Total Horas Asistidas</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for estudiante in estudiantes %}
+                <tr>
+                    <td style="width: 20%;">{{ estudiante.nombre_completo }}</td>
+                    <td style="width: 15%;">{{ estudiante.cedula }}</td>
+                    <td style="width: 15%;">{{ estudiante.telefono }}</td>
+                    <td style="width: 35%;">
+                        {% if estudiante.fechas_y_horas_asistencia %}
+                            <ul class="attendance-list">
+                            {% for fecha_hora in estudiante.fechas_y_horas_asistencia %}
+                                <li>{{ fecha_hora }}</li>
+                            {% endfor %}
+                            </ul>
+                        {% else %}
+                            <span>Ninguna asistencia registrada.</span>
+                        {% endif %}
+                    </td>
+                    <td style="width: 15%;">{{ estudiante.total_horas_asistidas }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>No hay estudiantes registrados en este curso o no se encontraron asistencias.</p>
+    {% endif %}
+
+    <div class="footer">
+        Generado por el Sistema de Asistencia Escolar - IUJO
+    </div>
+</body>
+</html>

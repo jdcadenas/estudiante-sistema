@@ -1,6 +1,7 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.conf import settings
+from django.utils import timezone
 
 # MODELO DE USUARIO PERSONALIZADO
 class Usuario(AbstractUser):
@@ -55,6 +56,7 @@ class PerfilEstudiante(models.Model):
     apellidos = models.CharField('Apellidos', max_length=100)
     grupo = models.CharField('Grupo', max_length=50, blank=True, null=True)
     grado = models.CharField('Grado', max_length=50, blank=True, null=True)
+    telefono = models.CharField('Número de Teléfono', max_length=20)
 
     def __str__(self):
         return f'{self.nombres} {self.apellidos}'
@@ -75,17 +77,17 @@ class Asistencia(models.Model):
         related_name='asistencias',
         verbose_name='Estudiante'
     )
-    fecha = models.DateField('Fecha')
+    fecha = models.DateTimeField('Fecha y Hora', default=timezone.now)
+    horas_academicas = models.PositiveIntegerField('Horas Académicas', default=2)
     esta_presente = models.BooleanField('¿Está Presente?', default=False)
 
     def __str__(self):
         estado = "Presente" if self.esta_presente else "Ausente"
-        return f'{self.estudiante} - {self.fecha} ({estado})'
+        return f'{self.estudiante} - {self.fecha.strftime("%Y-%m-%d %H:%M")} ({estado})'
 
     class Meta:
         verbose_name = 'Registro de Asistencia'
         verbose_name_plural = 'Registros de Asistencia'
-        unique_together = ('estudiante', 'fecha') # Un solo registro por estudiante y por fecha
         ordering = ['-fecha', 'estudiante']
 
 # MODELO DE SOLICITUD DE PERMISO

@@ -5,8 +5,13 @@ from django.contrib import messages
 from django.http import HttpResponse, HttpResponseForbidden
 from django.utils import timezone
 from django.urls import reverse
+from django.db.models import Sum
+from django.template.loader import get_template
 from .models import PerfilEstudiante, Asistencia, SolicitudPermiso, Feedback, Usuario, Curso
 from .forms import RegistroUsuarioForm, PerfilEstudianteForm, SolicitudPermisoForm, FeedbackForm, EdicionUsuarioForm
+from io import BytesIO
+from datetime import date
+from xhtml2pdf import pisa
 
 # Vista de inicio
 def home(request):
@@ -292,9 +297,8 @@ def tomar_asistencia(request):
     Muestra la interfaz para tomar la asistencia del día, filtrada por cursos asignados al admin.
     Permite filtrar por un curso específico.
     """
-    hoy = timezone.localdate() # Usar timezone.localdate() para obtener la fecha local
+    hoy = timezone.localdate()
     
-    # Obtener cursos que el administrador puede gestionar
     if request.user.is_superuser:
         cursos_gestionables = Curso.objects.all()
         estudiantes_base_queryset = PerfilEstudiante.objects.all()
@@ -302,7 +306,6 @@ def tomar_asistencia(request):
         cursos_gestionables = request.user.cursos_asignados.all()
         estudiantes_base_queryset = PerfilEstudiante.objects.filter(curso__in=cursos_gestionables)
 
-    # Obtener el ID del curso seleccionado del request GET
     curso_id = request.GET.get('curso', None)
     curso_seleccionado = None
 
@@ -311,11 +314,9 @@ def tomar_asistencia(request):
     if curso_id:
         try:
             curso_seleccionado = Curso.objects.get(pk=curso_id)
-            # Verificar si el admin tiene permiso para tomar asistencia para este curso
             if not request.user.is_superuser and curso_seleccionado not in cursos_gestionables:
                 return HttpResponseForbidden("No tienes permiso para tomar asistencia para este curso.")
             
-            # Filtrar queryset por el curso seleccionado
             estudiantes_queryset = estudiantes_queryset.filter(curso=curso_seleccionado)
         except Curso.DoesNotExist:
             messages.error(request, "El curso seleccionado no es válido.")
@@ -323,15 +324,24 @@ def tomar_asistencia(request):
     
     estudiantes = estudiantes_queryset.order_by('apellidos', 'nombres')
     
-    # Obtener todas las asistencias de hoy para los estudiantes gestionables
-    asistencias_hoy = Asistencia.objects.filter(fecha=hoy, estudiante__in=estudiantes_queryset).select_related('estudiante')
+    # WORKAROUND: Usar un rango de fechas para evitar el error 'user-defined function raised exception' de SQLite.
+    start_of_day = timezone.make_aware(timezone.datetime.combine(hoy, timezone.datetime.min.time()))
+    end_of_day = start_of_day + timezone.timedelta(days=1)
     
-    # Crear un diccionario para un acceso rápido: {estudiante_pk: esta_presente}
+    asistencias_hoy = Asistencia.objects.filter(
+        fecha__gte=start_of_day,
+        fecha__lt=end_of_day,
+        estudiante__in=estudiantes_queryset
+    ).select_related('estudiante')
+    
     asistencias_por_estudiante = {asistencia.estudiante.pk: asistencia.esta_presente for asistencia in asistencias_hoy}
 
-    # Marcar qué estudiantes ya tienen un registro de asistencia hoy
+    # Obtener las horas guardadas para mostrarlas en el selector
+    horas_academicas_guardadas = 2  # Valor por defecto
+    if asistencias_hoy.exists():
+        horas_academicas_guardadas = asistencias_hoy.first().horas_academicas
+
     for est in estudiantes:
-        # Si hay un registro de asistencia para el estudiante hoy, usar su estado, si no, asumir False
         est.asistio_hoy = asistencias_por_estudiante.get(est.pk, False)
 
     context = {
@@ -339,7 +349,8 @@ def tomar_asistencia(request):
         'curso_seleccionado': curso_seleccionado,
         'estudiantes': estudiantes,
         'hoy': hoy,
-        'asistencia_tomada': asistencias_hoy.exists() # Si hay cualquier registro de asistencia hoy
+        'asistencia_tomada': asistencias_hoy.exists(),
+        'horas_academicas_guardadas': horas_academicas_guardadas,
     }
     return render(request, 'admin/tomar_asistencia.html', context)
 
@@ -350,14 +361,17 @@ def guardar_asistencia(request):
     Guarda los datos de asistencia enviados desde el formulario, filtrando por cursos del admin.
     Lógica simplificada: para todos los estudiantes relevantes, si está marcado -> presente, si no -> ausente.
     """
-    
     if request.method == 'POST':
-        hoy = timezone.localdate()
+        hoy_date = timezone.localdate()
         ids_presentes = set(request.POST.getlist('presentes'))
-        
+        horas_academicas_str = request.POST.get('horas_academicas', '2') # Default to '2'
+        try:
+            horas_academicas = int(horas_academicas_str)
+        except (ValueError, TypeError):
+            horas_academicas = 2 # Fallback to default if conversion fails
+
         curso_id = request.GET.get('curso', None)
         
-        # Determine the base queryset for students the admin can manage
         if request.user.is_superuser:
             cursos_gestionables = Curso.objects.all()
             estudiantes_a_gestionar_queryset = PerfilEstudiante.objects.all()
@@ -365,7 +379,6 @@ def guardar_asistencia(request):
             cursos_gestionables = request.user.cursos_asignados.all()
             estudiantes_a_gestionar_queryset = PerfilEstudiante.objects.filter(curso__in=cursos_gestionables)
 
-        # Apply specific course filter if one is selected
         if curso_id:
             try:
                 curso_seleccionado = Curso.objects.get(pk=curso_id)
@@ -377,31 +390,129 @@ def guardar_asistencia(request):
             except Curso.DoesNotExist:
                 messages.error(request, "El curso seleccionado no es válido.")
                 return redirect(reverse('tomar_asistencia'))
-        
-        # Now, estudiantes_a_gestionar_queryset holds *only* the students relevant to the current form/course filter.
-
-        # Process all relevant students in a single loop
+            
         for estudiante in estudiantes_a_gestionar_queryset:
             esta_presente = str(estudiante.pk) in ids_presentes
             
-            Asistencia.objects.update_or_create(
+            start_of_day = timezone.make_aware(timezone.datetime.combine(hoy_date, timezone.datetime.min.time()))
+            end_of_day = start_of_day + timezone.timedelta(days=1)
+
+            asistencia_hoy = Asistencia.objects.filter(
                 estudiante=estudiante,
-                fecha=hoy,
-                defaults={'esta_presente': esta_presente}
-            )
-            
+                fecha__gte=start_of_day,
+                fecha__lt=end_of_day
+            ).first()
+
+            if asistencia_hoy:
+                asistencia_hoy.esta_presente = esta_presente
+                asistencia_hoy.fecha = timezone.now()
+                asistencia_hoy.horas_academicas = horas_academicas
+                asistencia_hoy.save(update_fields=['esta_presente', 'fecha', 'horas_academicas'])
+            else:
+                Asistencia.objects.create(
+                    estudiante=estudiante,
+                    esta_presente=esta_presente,
+                    horas_academicas=horas_academicas,
+                )
+        
         messages.success(request, 'La asistencia ha sido guardada/actualizada correctamente.')
         
         redirect_url = reverse('tomar_asistencia')
-        if curso_id: # Preserve the course filter in redirect
+        if curso_id:
             redirect_url += f"?curso={curso_id}"
         return redirect(redirect_url)
 
-    # If not POST, just redirect to tomar_asistencia (with existing course filter if any)
     redirect_url = reverse('tomar_asistencia')
     if request.GET.get('curso', None):
         redirect_url += f"?curso={request.GET.get('curso')}"
     return redirect(redirect_url)
+
+@login_required
+@user_passes_test(es_admin)
+def vista_reportes_cursos(request):
+    """
+    Muestra una lista de cursos para generar reportes.
+    """
+    if request.user.is_superuser:
+        cursos_gestionables = Curso.objects.all()
+    else:
+        cursos_gestionables = request.user.cursos_asignados.all()
+    
+    context = {
+        'cursos': cursos_gestionables.order_by('nombre')
+    }
+    return render(request, 'admin/reportes_cursos.html', context)
+
+
+@login_required
+@user_passes_test(es_admin)
+def generar_reporte_asistencia_pdf(request, curso_id):
+    """
+    Genera un reporte de asistencia en formato PDF para un curso dado.
+    """
+    curso = get_object_or_404(Curso, pk=curso_id)
+
+    # Verificar permisos del administrador para este curso
+    if not request.user.is_superuser and curso not in request.user.cursos_asignados.all():
+        messages.error(request, "No tiene permiso para generar reportes de este curso.")
+        return redirect('vista_reportes_cursos') # O a donde sea apropiado
+
+    # Datos del facilitador (administrador logueado)
+    facilitador_nombre = request.user.get_full_name() or request.user.username
+    
+    # Obtener estudiantes del curso
+    estudiantes_del_curso = PerfilEstudiante.objects.filter(curso=curso).order_by('apellidos', 'nombres')
+
+    datos_estudiantes_reporte = []
+    for estudiante in estudiantes_del_curso:
+        asistencias_estudiante = Asistencia.objects.filter(
+            estudiante=estudiante,
+            # Considerar solo asistencias marcadas como presentes
+            esta_presente=True
+        ).order_by('fecha')
+
+        # Calcular total de horas académicas asistidas
+        total_horas_asistidas = asistencias_estudiante.aggregate(Sum('horas_academicas'))['horas_academicas__sum'] or 0
+
+        # Recopilar fechas y horas de asistencia, incluyendo las horas académicas de cada registro
+        fechas_y_horas_asistencia = [
+            f'{asist.fecha.strftime("%d/%m/%Y %H:%M")} ({asist.horas_academicas} {"hora" if asist.horas_academicas == 1 else "horas"})'
+            for asist in asistencias_estudiante
+        ]
+
+        datos_estudiantes_reporte.append({
+            'nombre_completo': f"{estudiante.nombres} {estudiante.apellidos}",
+            'cedula': estudiante.cedula,
+            'telefono': estudiante.telefono, # Asumiendo que el campo 'telefono' está directamente en PerfilEstudiante
+            'email': estudiante.usuario.email,
+            'total_horas_asistidas': total_horas_asistidas,
+            'fechas_y_horas_asistencia': fechas_y_horas_asistencia,
+        })
+
+    context = {
+        'curso_nombre': curso.nombre,
+        'facilitador_nombre': facilitador_nombre,
+        'fecha_emision': date.today().strftime("%d/%m/%Y"),
+        'estudiantes': datos_estudiantes_reporte,
+        'logo_path': request.build_absolute_uri('/static/img/iujo_logo.png') # Asegúrate de que el logo exista aquí
+    }
+
+    template_path = 'admin/reporte_asistencia_template.html'
+    template = get_template(template_path)
+    html = template.render(context)
+
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="reporte_asistencia_{curso.codigo}_{date.today().strftime("%Y%m%d")}.pdf"'
+
+    pisa_status = pisa.CreatePDF(
+        html,                # the HTML to convert
+        dest=response,       # file handle to receive result
+        encoding="UTF-8"
+    )
+    if pisa_status.err:
+        messages.error(request, "Hubo un error al generar el PDF.")
+        return redirect('vista_reportes_cursos')
+    return response
 
 @login_required
 @user_passes_test(es_admin)
@@ -417,7 +528,6 @@ def reporte_inasistencias(request):
     else:
         fecha_filtro = timezone.localdate()
     
-    # Obtener cursos que el administrador puede gestionar
     if request.user.is_superuser:
         cursos_gestionables = Curso.objects.all()
         estudiantes_gestionables_base = PerfilEstudiante.objects.all()
@@ -425,7 +535,6 @@ def reporte_inasistencias(request):
         cursos_gestionables = request.user.cursos_asignados.all()
         estudiantes_gestionables_base = PerfilEstudiante.objects.filter(curso__in=cursos_gestionables)
 
-    # Obtener el ID del curso seleccionado del request GET
     curso_id = request.GET.get('curso', None)
     curso_seleccionado = None
 
@@ -434,31 +543,29 @@ def reporte_inasistencias(request):
     if curso_id:
         try:
             curso_seleccionado = Curso.objects.get(pk=curso_id)
-            # Verificar si el admin tiene permiso para ver este curso
             if not request.user.is_superuser and curso_seleccionado not in cursos_gestionables:
                 return HttpResponseForbidden("No tienes permiso para ver reportes de este curso.")
             
-            # Filtrar queryset por el curso seleccionado
             estudiantes_gestionables_queryset = estudiantes_gestionables_queryset.filter(curso=curso_seleccionado)
         except Curso.DoesNotExist:
             messages.error(request, "El curso seleccionado no es válido.")
             curso_id = None
     
-    # Obtener todos los estudiantes que el admin puede gestionar y para la fecha seleccionada
     estudiantes = estudiantes_gestionables_queryset.order_by('apellidos', 'nombres')
 
-    # Obtener todas las asistencias para la fecha y estudiantes filtrados
+    # WORKAROUND: Usar un rango de fechas para evitar el error 'user-defined function raised exception' de SQLite.
+    start_of_day = timezone.make_aware(timezone.datetime.combine(fecha_filtro, timezone.datetime.min.time()))
+    end_of_day = start_of_day + timezone.timedelta(days=1)
+
     asistencias_del_dia = Asistencia.objects.filter(
-        fecha=fecha_filtro,
+        fecha__gte=start_of_day,
+        fecha__lt=end_of_day,
         estudiante__in=estudiantes_gestionables_queryset
     ).values('estudiante__pk', 'esta_presente')
 
-    # Convertir a diccionario para fácil acceso
     asistencias_map = {item['estudiante__pk']: item['esta_presente'] for item in asistencias_del_dia}
 
-    # Asignar el estado de asistencia a cada objeto estudiante
     for estudiante in estudiantes:
-        # True = Presente, False = Ausente, None = Sin Registro
         estudiante.estado_asistencia = asistencias_map.get(estudiante.pk)
 
     context = {

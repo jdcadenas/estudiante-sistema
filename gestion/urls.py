@@ -24,6 +24,8 @@ urlpatterns = [
     path('admin/asistencia/', views.tomar_asistencia, name='tomar_asistencia'),
     path('admin/asistencia/guardar/', views.guardar_asistencia, name='guardar_asistencia'),
     path('admin/reporte/inasistencias/', views.reporte_inasistencias, name='reporte_inasistencias'),
+    path('admin/reportes/cursos/', views.vista_reportes_cursos, name='vista_reportes_cursos'),
+    path('admin/reporte/asistencia/<int:curso_id>/pdf/', views.generar_reporte_asistencia_pdf, name='generar_reporte_asistencia_pdf'),
 
     path('admin/permisos/', views.gestionar_permisos, name='gestionar_permisos'),
     path('admin/permisos/aprobar/<int:pk>/', views.aprobar_permiso, name='aprobar_permiso'),

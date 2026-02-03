@@ -16,6 +16,12 @@ class RegistroUsuarioForm(forms.ModelForm):
             raise forms.ValidationError('Las contraseñas no coinciden.')
         return cd['password2']
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field_name in self.fields:
+            self.fields[field_name].widget.attrs['class'] = 'form-control'
+
+
 # FORMULARIO DE EDICION DE USUARIO
 class EdicionUsuarioForm(forms.ModelForm):
     class Meta:
@@ -26,7 +32,7 @@ class EdicionUsuarioForm(forms.ModelForm):
 class PerfilEstudianteForm(forms.ModelForm):
     class Meta:
         model = PerfilEstudiante
-        fields = ['cedula', 'nombres', 'apellidos', 'grado', 'grupo', 'curso']
+        fields = ['cedula', 'nombres', 'apellidos', 'grado', 'grupo', 'curso', 'telefono']
 
     def __init__(self, *args, **kwargs):
         user = kwargs.pop('user', None) # Extraer el usuario si se pasó

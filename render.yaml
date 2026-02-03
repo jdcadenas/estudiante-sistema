@@ -2,9 +2,11 @@
 # For more information, see https://render.com/docs/yaml-spec
 services:
   # A PostgreSQL database
-  - type: pserv
+  - type: database # Corrected type from pserv to database
     name: mysqldb
+    databaseName: estudiante_sistema_db # Recommended for clarity
     plan: free # Replace with "standard" for a production database
+    region: oregon # Recommended to specify a region, e.g., oregon or frankfurt
 
   # A Web Service
   - type: web
@@ -24,4 +26,4 @@ services:
       - key: DEBUG
         value: "False"
       - key: ALLOWED_HOSTS # Add your Render URL here after deployment
-        value: "your-project-name.onrender.com" # Replace with your actual Render service URL
+        value: "estudiante-sistema.onrender.com" # Replace with your actual Render service URL

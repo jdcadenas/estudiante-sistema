@@ -2,12 +2,12 @@
 # For more information, see https://render.com/docs/yaml-spec
 services:
   # A PostgreSQL database
-  - type: database # Corrected type from pserv to database
-    name: mysqldb
-    databaseName: estudiante_sistema_db # Recommended for clarity
+  - type: postgres # Corrected type from pserv to database
+    name: estudiante-db 
+    databaseName: estudiante-db  # Recommended for clarity
     plan: free # Replace with "standard" for a production database
     region: oregon # Recommended to specify a region, e.g., oregon or frankfurt
-
+    user: estudiante_user # Optional: specify a custom user
   # A Web Service
   - type: web
     name: estudiante-sistema # Replace with your project name, e.g., "asistencia-escolar"
@@ -17,7 +17,7 @@ services:
     envVars:
       - key: DATABASE_URL
         fromDatabase:
-          name: mysqldb
+          name: estudiante-db 
           property: connectionString
       - key: SECRET_KEY
         generateValue: true

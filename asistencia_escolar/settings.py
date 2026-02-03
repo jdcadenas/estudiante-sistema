@@ -29,7 +29,7 @@ DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
 
 ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '').split(',')
 if DEBUG:
-    ALLOWED_HOSTS += ['192.168.10.109','*'] # Keep local IPs for development
+    ALLOWED_HOSTS += ['estudiante-sistema.onrender.com','*'] # Keep local IPs for development
 
 
 # Application definition

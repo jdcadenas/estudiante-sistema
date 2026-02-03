@@ -1,0 +1,27 @@
+# This file is used to configure your services on Render.
+# For more information, see https://render.com/docs/yaml-spec
+services:
+  # A PostgreSQL database
+  - type: pserv
+    name: mysqldb
+    plan: free # Replace with "standard" for a production database
+
+  # A Web Service
+  - type: web
+    name: estudiante-sistema # Replace with your project name, e.g., "asistencia-escolar"
+    env: python
+    buildCommand: "./build.sh"
+    startCommand: "gunicorn asistencia_escolar.wsgi" # Replace 'asistencia_escolar' with your project's main module name
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: mysqldb
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: WEB_CONCURRENCY
+        value: 4 # Adjust based on your instance size
+      - key: DEBUG
+        value: "False"
+      - key: ALLOWED_HOSTS # Add your Render URL here after deployment
+        value: "your-project-name.onrender.com" # Replace with your actual Render service URL

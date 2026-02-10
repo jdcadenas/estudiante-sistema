@@ -3,8 +3,11 @@
 
 set -o errexit
 
-# Instalar dependencias
-pip install -r requirements.txt
+# Instalar psycopg2-binary primero (evita problemas de compilación)
+pip install --no-cache-dir psycopg2-binary==2.9.9
+
+# Instalar el resto de dependencias
+pip install --no-cache-dir -r requirements.txt
 
 # Ejecutar migraciones
 python manage.py migrate

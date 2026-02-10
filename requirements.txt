@@ -1,9 +1,9 @@
 Django==4.2.11
 gunicorn==23.0.0
 whitenoise==6.5.0
-dj-database-url==2.0.0
+dj-database-url==2.1.0
 python-dotenv==1.0.0
-psycopg2-binary==2.8.6
+psycopg2-binary==2.9.9
 
 # Tus dependencias adicionales
 arabic-reshaper==3.0.0

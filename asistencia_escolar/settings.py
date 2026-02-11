@@ -83,24 +83,34 @@ WSGI_APPLICATION = 'asistencia_escolar.wsgi.application'
 
 
 # Database
-# DATABASE CONFIGURATION
-DATABASE_URL = os.environ.get('DATABASE_URL')
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
+
+# Intentamos obtener la URL de la base de datos
+DATABASE_URL = os.environ.get('DATABASE_URL')
+
 if DATABASE_URL:
-    # Producción (Render) - PostgreSQL
+    # Si existe DATABASE_URL (Producción/Render/Supabase)
     DATABASES = {
         'default': dj_database_url.config(
-            default=DATABASE_URL
+            default=DATABASE_URL,
+            conn_max_age=600,
+            conn_health_checks=True,
         )
     }
+    # Forzar el motor a postgresql si dj_database_url no lo detecta bien
+    DATABASES['default']['ENGINE'] = 'django.db.backends.postgresql'
 else:
+    # Si NO existe (Desarrollo local), usamos SQLite para que el sistema no explote
     DATABASES = {
-    'default': dj_database_url.config(
-        default=os.environ.get('DATABASE_URL'),
-        conn_max_age=600,
-        conn_health_checks=True,
-    )
-}
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
+
+# DEBUG: Esto te ayudará a ver en los logs de Render qué motor se cargó
+print(f"LOG: Motor de base de datos cargado: {DATABASES['default'].get('ENGINE')}")
+
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
 

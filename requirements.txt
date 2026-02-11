@@ -3,7 +3,7 @@ gunicorn==23.0.0
 whitenoise==6.5.0
 dj-database-url==2.1.0
 python-dotenv==1.0.0
-psycopg[binary]==3.2.4
+psycopg2===2.9.6
 
 # Tus dependencias adicionales
 arabic-reshaper==3.0.0

@@ -31,4 +31,6 @@ urlpatterns = [
     path('admin/permisos/aprobar/<int:pk>/', views.aprobar_permiso, name='aprobar_permiso'),
     path('admin/permisos/rechazar/<int:pk>/', views.rechazar_permiso, name='rechazar_permiso'),
     path('admin/feedback/', views.lista_feedback, name='lista_feedback'),
+    
+    path('despertar-sistema-secreto-123/', views.despertar_db),
 ]

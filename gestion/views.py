@@ -1,5 +1,4 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.http import HttpResponse, HttpResponseForbidden
@@ -7,11 +6,11 @@ from django.utils import timezone
 from django.urls import reverse
 from django.db.models import Sum
 from django.template.loader import get_template
-from .models import PerfilEstudiante, Asistencia, SolicitudPermiso, Feedback, Usuario, Curso
+from .models import PerfilEstudiante, Asistencia, SolicitudPermiso, Feedback, Curso
 from .forms import RegistroUsuarioForm, PerfilEstudianteForm, SolicitudPermisoForm, FeedbackForm, EdicionUsuarioForm
-from io import BytesIO
 from datetime import date
 from xhtml2pdf import pisa
+from django.contrib.auth import get_user_model
 
 # Vista de inicio
 def home(request):
@@ -695,3 +694,9 @@ def lista_feedback(request):
         'feedbacks': feedbacks,
     }
     return render(request, 'admin/lista_feedback.html', context)
+
+def despertar_db(request):
+    # Hacemos una consulta simple que no consuma recursos pero toque la DB
+    User = get_user_model()
+    cantidad = User.objects.count() 
+    return HttpResponse(f"Base de datos despierta. Usuarios: {cantidad}", status=200)

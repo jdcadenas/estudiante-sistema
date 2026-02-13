@@ -4,11 +4,11 @@ services:
   
   # A Web Service
   - type: web
-    name: estudiante-sistema # Replace with your project name, e.g., "asistencia-escolar"
+    name: estudiante-sistema-1 # Replace with your project name, e.g., "asistencia-escolar"
     runtime: python # Explicitly define runtime
     env: python
     buildCommand: "./build.sh"
-    startCommand: "gunicorn asistencia_escolar.wsgi" # Replace 'asistencia_escolar' with your project's main module name
+    startCommand: "gunicorn estudiante-sistema-1.wsgi" # Replace 'asistencia_escolar' with your project's main module name
     envVars:
       - key: DATABASE_URL # Corrected key name
         value: "" # Leave empty, will be set on Render manually as per previous instructions
@@ -19,4 +19,4 @@ services:
       - key: DEBUG
         value: "False"
       - key: ALLOWED_HOSTS # Add your Render URL here after deployment
-        value: "estudiante-sistema.onrender.com" # Replace with your actual Render service URL
+        value: "estudiante-sistema-1.onrender.com" # Replace with your actual Render service URL

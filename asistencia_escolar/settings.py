@@ -29,15 +29,19 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-d4(n$yzdb3rd9#s3t$&9#ii^-peybjju@%ubij+h+fmhsgon#3') # Use environment variable for production
+SECRET_KEY = os.environ.get('SECRET_KEY', default='super secret key')# Use environment variable for production
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
+DEBUG = 'RENDER' not in os.environ
 
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'estudiante-sistema.onrender.com').split(',')
-if DEBUG:
-    ALLOWED_HOSTS += ['estudiante-sistema.onrender.com','*'] # Keep local IPs for development
+ALLOWED_HOSTS = [
+    'localhost',
+    '127.0.0.1'
+]
 
+RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
+if RENDER_EXTERNAL_HOSTNAME:
+    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
 
 # Application definition
 
@@ -92,13 +96,11 @@ if DATABASE_URL:
     # Si existe DATABASE_URL (Producción/Render/Supabase)
     DATABASES = {
         'default': dj_database_url.config(
-            default=DATABASE_URL,
-            conn_max_age=600,
-            conn_health_checks=True,
-        )
-    }
+        default=os.environ.get('DATABASE_URL'),
+        conn_max_age=600,
+        ssl_require=True)
+        }
     # Forzar el motor a postgresql si dj_database_url no lo detecta bien
-    DATABASES['default']['ENGINE'] = 'django.db.backends.postgresql'
 else:
     # Si NO existe (Desarrollo local), usamos SQLite para que el sistema no explote
     DATABASES = {

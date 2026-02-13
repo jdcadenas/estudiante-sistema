@@ -1,3 +1,4 @@
+import os
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
@@ -696,7 +697,15 @@ def lista_feedback(request):
     return render(request, 'admin/lista_feedback.html', context)
 
 def despertar_db(request):
-    # Hacemos una consulta simple que no consuma recursos pero toque la DB
+    # Obtenemos la llave desde la URL (ejemplo: ?token=mi_clave_secreta)
+    token_recibido = request.GET.get('token')
+    token_real = os.environ.get('CRON_TOKEN', 'clave-temporal-123')
+
+    if token_recibido != token_real:
+        return HttpResponseForbidden("Acceso denegado: Token incorrecto.")
+
+    # Operación de base de datos
     User = get_user_model()
-    cantidad = User.objects.count() 
-    return HttpResponse(f"Base de datos despierta. Usuarios: {cantidad}", status=200)
+    User.objects.count() 
+    
+    return HttpResponse("Base de datos y Render activos.", status=200)

@@ -699,7 +699,7 @@ def lista_feedback(request):
 def despertar_db(request):
     # Obtenemos la llave desde la URL (ejemplo: ?token=mi_clave_secreta)
     token_recibido = request.GET.get('token')
-    token_real = os.environ.get('CRON_TOKEN', 'clave-temporal-123')
+    token_real = os.environ.get('CRON_TOKEN', 'AsistenciaEscolar2026_Secure_Key')
 
     if token_recibido != token_real:
         return HttpResponseForbidden("Acceso denegado: Token incorrecto.")
